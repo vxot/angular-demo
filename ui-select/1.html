@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <!--<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.css">-->
+    <link rel="stylesheet" href="../node_modules/ui-select/dist/select.css">
+    <!--<script src="../node_modules/jquery/dist/jquery.min.js"></script>-->
+    <!--<script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>-->
+    <script src="../node_modules/angular/angular.min.js"></script>
+    <script src="../node_modules/angular-sanitize/angular-sanitize.min.js"></script>
+    <script src="../node_modules/ui-select/dist/select.js"></script>
+
+</head>
+<body ng-app="app" ng-controller="ctrl">
+aa
+<button ng-click="setInputFocus()">Set Focus</button>
+    <ui-select ng-model="selected" theme="bootstrap" style="min-width: 300px;" title="oldTest">
+        <ui-select-match placeholder="Enter an name">{{$select.selected.name}}</ui-select-match>
+        <ui-select-choices repeat="s in testArr track by $index">
+            <div ng-bind-html="s.name | highlight: $select.search"></div>
+        </ui-select-choices>
+    </ui-select>
+
+    <ui-select multiple ng-model="selected" theme="bootstrap" style="min-width: 300px;" title="oldTest2" >
+        <ui-select-match placeholder="Enter an name" allow-clear=false>{{$item}}</ui-select-match>
+        <ui-select-choices repeat="s in testArr track by $index">
+            <div ng-bind-html="s.name | highlight: $select.search"></div>
+        </ui-select-choices>
+    </ui-select>
+
+<div>
+    <ui-select multiple ng-model="selected2" theme="bootstrap" ng-change="testChange(selected2)" uis-open-close="onOpenClose(isOpen)"
+               style="min-width: 300px;" title="oldTest2" >
+        <ui-select-match placeholder="Enter a name" >{{$item.name}}</ui-select-match>
+        <ui-select-choices repeat="s in searchData track by $index">
+            <div ng-bind-html="s.name | highlight: $select.search"></div>
+        </ui-select-choices>
+        <ui-select-no-choice>
+            Dang!  We couldn't find any choices...
+        </ui-select-no-choice>
+    </ui-select>
+</div>
+
+
+
+</body>
+
+<script>
+    var app = angular.module('app', ['ui.select', 'ngSanitize']);
+
+    app.config(['uiSelectConfig', function(uiSelectConfig) {
+        uiSelectConfig.theme = 'bootstrap';
+        uiSelectConfig.resetSearchInput = true;
+        uiSelectConfig.appendToBody = true;
+    }]);
+
+    app.filter('propsFilter', function() {
+        return function(items, props) {
+            var out = [];
+
+            if (angular.isArray(items)) {
+                var keys = Object.keys(props);
+
+                items.forEach(function(item) {
+                    var itemMatches = false;
+
+                    for (var i = 0; i < keys.length; i++) {
+                        var prop = keys[i];
+                        var text = props[prop].toLowerCase();
+                        if (item[prop].toString().toLowerCase().indexOf(text) !== -1) {
+                            itemMatches = true;
+                            break;
+                        }
+                    }
+
+                    if (itemMatches) {
+                        out.push(item);
+                    }
+                });
+            } else {
+                out = items;
+            }
+
+            return out;
+        };
+    });
+
+    app.controller('ctrl', ['$scope',function($scope){
+        $scope.test = {};
+        $scope.testArr = [
+            {id: 1, name: "aa"},
+            {id: 2, name: "bb"},
+            {id: 3, name: "cc"},
+            {id: 4, name: "dd"},
+            {id: 5, name: "ee"},
+            {id: 6, name: "ff"},
+            {id: 7, name: "gg"},
+            {id: 8, name: "hh"},
+            {id: 9, name: "yyyyy"},
+
+        ];
+
+        $scope.searchData = [
+            {id: 1, name: "aa"},
+            {id: 2, name: "bb"},
+            {id: 3, name: "cc"},
+            {id: 4, name: "dd"},
+            {id: 5, name: "ee"},
+            {id: 6, name: "ff"},
+            {id: 7, name: "gg"},
+            {id: 8, name: "hh"},
+            {id: 9, name: "yyyyy"},
+        ];
+
+
+        $scope.testChange = function (selected2) {
+            console.log($scope);
+            console.log(selected2);
+
+        };
+
+        $scope.onOpenClose = function(a){
+            console.log(a);
+        }
+
+ /*
+   focus-on='SetFocus' on-select="selectFunction($item, $model)"
+   $scope.setInputFocus = function(){
+            $scope.$broadcast('SetFocus');
+        };
+
+        $scope.selectFunction = function ($item, $model) {
+            $scope.$broadcast('SetFocus');
+        }*/
+//        $scope.selected = { value: $scope.itemArray[0] };
+    }
+    ]);
+
+
+
+    
+</script>
+</html>

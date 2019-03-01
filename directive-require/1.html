@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../node_modules/bootstrap/dist/css/bootstrap.min.css">
+    <!--<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.css">-->
+    <link rel="stylesheet" href="../node_modules/ui-select/dist/select.css">
+    <!--<script src="../node_modules/jquery/dist/jquery.min.js"></script>-->
+    <!--<script src="../node_modules/bootstrap/dist/js/bootstrap.min.js"></script>-->
+    <script src="../node_modules/angular/angular.min.js"></script>
+    <script src="../node_modules/angular-sanitize/angular-sanitize.min.js"></script>
+    <script src="../node_modules/ui-select/dist/select.js"></script>
+
+</head>
+<body ng-app="main" ng-controller="ctrl">
+
+    <h3>内容1:同级别的情况，加"？"可以为非必须的require</h3>
+    <test-require-sibling-three test-require-sibling-one test-require-sibling-two></test-require-sibling-three>
+    <h3>内容2:不同级别的情况，加"？"可以为非必须的require</h3>
+    <test-require-parent></test-require-parent>
+
+</body>
+
+<script>
+
+
+    /**
+      * 由于directive在angular中的地位之重，所以得认真对待。但理解难啊，所以决定逐个属性进行实例分析
+      * directive实例分析第六篇：require
+      * Created by liyanq on 16/12/22.
+      */
+
+
+    /**require的地位也不能忽视啊，直接影响link的第四个参数的来源。当然如果不涉及父子作用域或兄弟作用域信息的传递，它也没啥作用了。
+      * 1，原型：require property can be a string, an array or an object;
+      *         require: 'siblingDirectiveName', // or // ['^parentDirectiveName', '?optionalDirectiveName', '?^optionalParent'],
+      * 2，不写require,link的第四个参数就是自己的controller。
+      * 3，只写"string"，属于同一标签，所require的指令必须以"A"的形式存在，且不能循环require，被require的指令不能template.
+      * 4，scope的区别，这个非常重要。
+      *    这三个指令(Sibling的)的scope是同一对象，无论在什么地方(link,controller)
+      *    如果有一个指令的scope为true，那么他们共用一个新的scope.
+      *    如果三个指令的scope都为false，那么他们共用外层scope,例如：testDirectiveRequireController的scope。
+      *    两个指令(parent，child)的scope不同对象，除非scope都是false.
+      *    以上情况不清楚原因，可能和指令为属性的时候有关系。也许指令为属性的时候，共享元素的scope?(瞎猜的~)
+      *
+      *
+      *    突然感觉就难了，真特么难啊，千变万化，指令存在的形式太多了。
+      *    require的其他形式如：?、?^、?^^、^^(上上层的自己一样的指令)、arr、obj，甚至和bindToController属性有关系，
+      *    这些内容等到时候再说吧。
+      * */
+
+
+    var app = angular.module("main", []);
+    app.controller("ctrl", function ($scope) {
+        $scope.message = "testDirectiveRequireController";
+
+
+    }).directive("testRequireSiblingOne", function () {
+        var dir = {};
+        dir.restrict = "A";
+        dir.replace = true;
+        dir.scope = false;
+        dir.controller = function ($scope) {
+            console.log("testRequireSiblingOne->controller");
+            this.onSiblingClickOne = function () {
+                console.log("我是来自testRequireSiblingOne的controller的事件");
+            }
+        };
+        return dir;
+    }).directive("testRequireSiblingTwo", function () {
+        var dir = {};
+        dir.restrict = "A";
+        dir.replace = true;
+        dir.scope = false;
+        dir.require = "testRequireSiblingOne";
+        dir.link = function (scope, elem, attr, ctr) {
+            console.log("testRequireSiblingTwo->link");
+            scope.onSiblingClickTwo = function () {
+                ctr.onSiblingClickOne();
+                console.log("我是来自testRequireSiblingTwo的link的事件");
+            }
+        };
+        dir.controller = function ($scope) {
+            console.log("testRequireSiblingTwo->controller");
+            this.onSiblingClickTwo = function () {//必须等加载完了，才能调用，否则无效
+                $scope.onSiblingClickTwo();
+            };
+        };
+        return dir;
+    }).directive("testRequireSiblingThree", function () {
+        var dir = {};
+        dir.restrict = "E";
+        dir.replace = true;
+        dir.scope = true;
+        dir.require = "testRequireSiblingTwo";
+        dir.template = function (tElement, tAttrs) {
+            return "<div>来自testRequireSiblingThree指令模版" +
+                "<button ng-click='onSiblingClickThree()'>执行兄弟的click事件</button>" +
+                "</div>"
+        };
+        dir.link = function (scope, elem, attr, ctr) {
+            console.log(scope);
+            console.log("testRequireSiblingThree->link");
+            scope.onSiblingClickThree = function () {
+                ctr.onSiblingClickTwo();
+                console.log("我是来自testRequireSiblingThree的controller的事件");
+            }
+        };
+        return dir;
+    }).directive("testRequireParent", function () {
+        var dir = {};
+        dir.restrict = "E";
+        dir.replace = true;
+        dir.scope = true;
+        dir.template = function (tElement, tAttrs) {
+            return "<div>来自testRequireParent指令模版" +
+                "<test-require-child></test-require-child>" +
+                "</div>"
+        };
+        dir.controller = function ($scope) {
+            console.log($scope);
+            console.log("testRequireParent->controller");
+            this.onParentClick = function () {//必须等加载完了，才能调用，否则无效
+                console.log("我是来自testRequireParent的controller的事件");
+            };
+        };
+        return dir;
+    }).directive("testRequireChild", function () {
+        var dir = {};
+        dir.restrict = "E";
+        dir.replace = true;
+        dir.scope = true;
+        dir.require = "^testRequireParent";
+        dir.template = function (tElement, tAttrs) {
+            return "<div>testRequireChild" +
+                "<button ng-click='onChildClick()'>执行兄弟的click事件</button>" +
+                "</div>"
+        };
+        dir.link = function (scope, elem, attr, ctr) {
+            console.log(scope);
+            console.log("testRequireChild->link");
+            scope.onChildClick = function () {
+                // ctr.onParentClick();
+                console.log("我是来自testRequireChild的controller的事件");
+            }
+        };
+        return dir;
+    });
+
+
+
+    
+</script>
+</html>
